@@ -5,5 +5,11 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Document</title>
 	</head>
-	<body></body>
+	<body>
+		<form action="/messages" method="post">
+			<input type="text" name="username" placeholder="Enter your username..." />
+			<textarea name="message" id="message" cols="30" rows="10"></textarea>
+			<input type="submit" value="Post message" />
+		</form>
+	</body>
 </html>

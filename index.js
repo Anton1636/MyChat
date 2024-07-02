@@ -4,6 +4,8 @@ import bodyParser from 'body-parser'
 import passport from 'passport'
 import passportLocalMongoose from 'passport-local-mongoose'
 import connectEnsureLogin from 'connect-ensure-login'
+import { messages } from 'aleph-js'
+const aleph = 'aleph-js'
 
 const expressSession = require('express-session')({
 	secret: 'insert secret here',
@@ -27,6 +29,11 @@ mongoose.connect('mongodb://localhost/Chat')
 const userSchema = new mongoose.Schema({
 	username: String,
 	passport: String,
+	private_key: String,
+	public_key: String,
+	mnemonics: String,
+	address: String,
+	type: String,
 })
 
 userSchema.plugin(passportLocalMongoose)
@@ -50,20 +57,52 @@ app.get('/register', (req, res) => {
 	res.sendFile('views/register.html', { root: __dirname })
 })
 
-app.get('/register', async (req, res) => {
+app.post('/register', async (req, res) => {
 	User.Register(
 		{ username: req.body.username, active: false },
 		req.body.password,
 		(err, user) => {
-			passport.authenticate('local')(req, res, () => {
-				res.redirect('/')
+			aleph.ethereum.new_account().then(eth_account => {
+				user.private_key = eth_account.private_key
+				user.public_key = eth_account.public_key
+				user.mnemonics = eth_account.mnemonics
+				user.address = eth_account.address
+				user.save()
+				passport.authenticate('local')(req, res, () => {
+					res.redirect('/')
+				})
 			})
 		}
 	)
 })
 
-app.get('/login', passport.authenticate('local'), (req, res) => {
+app.post('/login', passport.authenticate('local'), (req, res) => {
 	res.redirect('/')
+})
+
+app.post('/messages', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
+	var message = req.body.message
+
+	aleph.ethereum
+		.import_account({ mnemonics: req.user.mnemonics })
+		.then(account => {
+			var room = 'hall'
+			var api_server = 'https://api2.aleph.im'
+			var network_id = 261
+			var channel = 'TEST'
+
+			aleph.posts.submit(
+				account.address,
+				'chat',
+				{ body: message },
+				{
+					ref: room,
+					api_server: api_server,
+					account: account,
+					channel: channel,
+				}
+			)
+		})
 })
 
 app.get('/users/:username', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
