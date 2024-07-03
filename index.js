@@ -4,7 +4,7 @@ import bodyParser from 'body-parser'
 import passport from 'passport'
 import passportLocalMongoose from 'passport-local-mongoose'
 import connectEnsureLogin from 'connect-ensure-login'
-import { messages } from 'aleph-js'
+import { messages, posts } from 'aleph-js'
 const aleph = 'aleph-js'
 
 const expressSession = require('express-session')({
@@ -23,6 +23,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(expressSession)
 app.use(passport.initialize())
 app.use(passport.session())
+app.set('view engine', 'ejs')
 
 mongoose.connect('mongodb://localhost/Chat')
 
@@ -47,7 +48,15 @@ passport.deserializeUser(User.deserializeUser())
 // User.register({ username: 'test2', active: false }, 'password')
 
 app.get('/', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
-	res.sendFile('views/index.html', { root: __dirname })
+	var room = 'hall'
+	var api_server = 'https://api2.aleph.im'
+	var network_id = 261
+	var channel = 'TEST'
+	aleph.posts
+		.get_posts('chat', { refs: [room], api_server: api_server })
+		.then(result => {
+			res.render('index', { posts: result.posts })
+		})
 })
 
 app.get('/login', (req, res) => {
