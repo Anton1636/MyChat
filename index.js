@@ -89,7 +89,6 @@ app.get(
 	'/channels/:item_hash/join',
 	connectEnsureLogin.ensureLoggedIn(),
 	(req, res) => {
-		var room = req.params.room
 		var api_server = 'https://api2.aleph.im'
 		var network_id = 261
 		var channel = 'TEST'
@@ -97,23 +96,41 @@ app.get(
 		aleph.ethereum
 			.import_account({ mnemonics: req.user.mnemonics })
 			.then(async account => {
-				await aleph.posts.submit(
-					account.address,
-					'channel_memberships',
-					{},
-					{
-						ref: req.params.item_hash,
-						api_server: api_server,
-						account: account,
-						channel: channel,
+				let result = await aleph.posts.get_posts('channels', {
+					api_server: api_server,
+					hashes: [req.params.item_hash],
+				})
+
+				let post = result.posts[0]
+				if (post) {
+					let data
+					let post_content = JSON.parse(post.item_content)
+
+					if (post_content.content.type == 'private') {
+						data = { status: 'pending' }
+					} else {
+						data = { status: 'active' }
 					}
-				)
+					await aleph.posts.submit(
+						account.address,
+						'channel_memberships',
+						data,
+						{
+							ref: req.params.item_hash,
+							api_server: api_server,
+							account: account,
+							channel: channel,
+						}
+					)
+					res.redirect(`/rooms/${req.params.item_hash}`)
+				} else {
+					//TODO: error condition
+				}
 			})
-		res.redirect(`/rooms/${req.params.item_hash}`)
 	}
 )
 
-app.get('/channels/', connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
+app.get('/channels', connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
 	var room = req.params.room
 	var api_server = 'https://api2.aleph.im'
 	var network_id = 261
@@ -130,6 +147,7 @@ app.get('/channels/', connectEnsureLogin.ensureLoggedIn(), async (req, res) => {
 
 app.post('/channels', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
 	var channel_name = req.body.name
+	var channel_type = req.body.type
 
 	aleph.ethereum
 		.import_account({ mnemonics: req.user.mnemonics })
@@ -137,11 +155,25 @@ app.post('/channels', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
 			var api_server = 'https://api2.aleph.im'
 			var network_id = 261
 			var channel = 'CHAT2'
+			var data
+
+			if (channel_type == 'private') {
+				data = {
+					body: channel_name,
+					type: channel_type,
+					approved_addresses: [account.address],
+				}
+			} else {
+				data = {
+					body: channel_name,
+					type: channel_type,
+				}
+			}
 
 			let response = await aleph.posts.submit(
 				account.address,
 				'channels',
-				{ body: channel_name },
+				data,
 				{
 					api_server: api_server,
 					account: account,
@@ -186,12 +218,23 @@ app.get(
 
 		channel_refs = channel_refs.filter(ref => ref != undefined)
 
+		let result = await aleph.posts.get_posts('channels', {
+			api_server: api_server,
+			hashes: [room],
+		})
+
+		let post = result.posts[0]
+		let post_content = JSON.parse(post.item_content)
+		let channel_details = post_content.content
+
+		channel_refs = channel_refs.filter(ref => ref != undefined)
+
 		let channels = await aleph.posts.get_posts('channels', {
 			hashes: channel_refs,
 			api_server: api_server,
 		})
 
-		let result = await aleph.posts.get_posts('messages', {
+		result = await aleph.posts.get_posts('messages', {
 			refs: [room],
 			api_server: api_server,
 		})
@@ -200,6 +243,7 @@ app.get(
 			posts: result.posts,
 			user: req.user,
 			room: room,
+			channel_details: channel_details,
 		})
 	}
 )

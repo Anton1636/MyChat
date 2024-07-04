@@ -37,7 +37,11 @@
                 <% parsed_item.content.body%>
               </div>
               <div class="col-4">
-                <a class="btn btn-primary" href="/channels/<%= channel.item_hash %>/join">Join</a>
+               <% if (parsed_item.content.type == 'private' {%>
+								 <a class="btn btn-primary" href="/channels/<%= channel.item_hash %>/join">Request Access</a>
+								 <% } else {%>
+									 <a class="btn btn-primary" href="/channels/<%= channel.item_hash %>/join">Join</a>
+									 <% } %>
               </div>
             </div>
           </div>
