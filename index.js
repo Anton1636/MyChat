@@ -48,14 +48,26 @@ passport.deserializeUser(User.deserializeUser())
 // User.register({ username: 'test2', active: false }, 'password')
 
 app.get('/', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
-	var room = 'hall'
+	var room = 'troll'
 	var api_server = 'https://api2.aleph.im'
 	var network_id = 261
 	var channel = 'TEST'
 	aleph.posts
 		.get_posts('chat', { refs: [room], api_server: api_server })
 		.then(result => {
-			res.render('index', { posts: result.posts })
+			res.render('index', { posts: result.posts, user: req.user, room: room })
+		})
+})
+
+app.get('/rooms/:room', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
+	var room = req.params.room
+	var api_server = 'https://api2.aleph.im'
+	var network_id = 261
+	var channel = 'TEST'
+	aleph.posts
+		.get_posts('chat', { refs: [room], api_server: api_server })
+		.then(result => {
+			res.render('index', { posts: result.posts, user: req.user, room: room })
 		})
 })
 
@@ -89,13 +101,13 @@ app.post('/login', passport.authenticate('local'), (req, res) => {
 	res.redirect('/')
 })
 
-app.post('/messages', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
+app.post('/messages/:room', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
 	var message = req.body.message
 
 	aleph.ethereum
 		.import_account({ mnemonics: req.user.mnemonics })
 		.then(account => {
-			var room = 'hall'
+			const room = req.params.room
 			var api_server = 'https://api2.aleph.im'
 			var network_id = 261
 			var channel = 'TEST'
