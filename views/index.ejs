@@ -27,8 +27,7 @@
 	</head>
 	<body>
 		<div id="current-user" data-address="<%= user.address %>"></div>
-		<div id="current-room" data-room="<%= room %>"></div>
-		<div id="approved_addresses" data-approved_addresses="<%= channel_details.approved_addresses %>"></div>
+		
 
 			<div class="container-fluid">
 			<div class="row">
@@ -60,100 +59,16 @@
 						<nav class="navbar navbar-light">
 							<span class="navbar-brand" href="#">
 								<b>Chat</b>
-								<% room %>
 							</span>
 							<small>Some Members</small>
 						</nav>
 						<div id="messages">
-							<% if(locals.posts) { %>
-									<% posts.revers().forEach((post) => { %>
-									<% var parsed_item = JSON.parse(post.item_content)%>
-									<% if(channel_details.approved_addresses.include(parsed_item.address)) {%>
-									<div id="message-<%= post._id['$oid'] %>"
-										class="message mb-2 <%= parsed_item.address == user.address ? 'me' : ''%>"></div>
-									
-										<div class="content-container">
-											<div class="content"><%= parsed_item.content.body %></div>
-											<div class="author"><%= parsed_item.address %></div>
-										</div>
-									</div>
-									<%} %>
-									<%}) %>
-									</div>
-									<div class="chat-box">
-										<form action="/messages/<%= room %>" method="post" id="message-form">
-											<div class="input-group">
-												<input
-													type="text"
-													name="username"
-													placeholder="Enter your username..."
-												/>
-												<input
-												class="form-control"
-												type="text"
-													name="message"
-													id="message"
-													cols="30"
-													rows="10"
-												></input>
-												<div class="input-group-append">
-												<input class="btn btn-primary" type="submit" value="Post message" />
-												</div>
-											</div>
-										</form>
-									</div>
-									<%} else { %>
-										<div class="alert alert-info mt-4">
-											Choose a channel to get started
-										</div>
-							<%} %>
+							<div class="alert alert-info mt-4">
+								Choose a channel to get started
+							</div>
 					</div>
 				</div>
 			</div>
 		</div>
-		<script type="text/javascript">
-			$(document).ready(() => {
-
-				function appendMessage(message){
-					if(isNotOnPage(message) && isForChannel(message) && isChatMessage(message)){
-					var user_address = $('#current_user').data('address');
-					var template=
-					'<div class="message mb-2 '+ (user.address == message.content.address ? "me" :  "") + '"> \
-							<div class="content-container">\
-								<div class="content"> ' + message.content.content.body + '</div>\
-								<div class="author">'+ message.content.address +'</div>\
-							</div>\
-						</div>'
-					$('#messages').append(template)
-					}
-				}
-
-				function isNotOnPage(message){
-					return $(`#message-${message._id}`)[0] == undefined
-				}
-
-				function isForChannel(message){
-					return $('#current-room').data('room') == message.content.ref
-				}
-
-				function isChatMessage(message){
-					return message.content.content.body != undefined
-				}
-
-				const socket = new WebSocket(
-					'wss://api2.aleph.im/api/ws0/messages?msgType=POST&contentType=messages'
-				)
-				socket.onmessage = e => {
-					let message = JSON.parse(e.data)
-					appendMessage(message)
-				}
-
-				$('message-form').submit(e => {
-					e.preventDefault()
-					$.post('/messages<%= room %>', $('#message-form').serialize())
-					$('#message-form input[type=text]').val('')
-				})
-			})
-		</script>
 	</body>
 </html>
