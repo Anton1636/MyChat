@@ -188,6 +188,69 @@ app.post('/channels', connectEnsureLogin.ensureLoggedIn(), (req, res) => {
 })
 
 app.get(
+	'/channels/:channel_hash/approve/:user_address',
+	connectEnsureLogin.ensureLoggedIn(),
+	(req, res) => {
+		var channel_hash = req.params.channel_hash
+		var user_address = req.params.user_address
+
+		aleph.ethereum
+			.import_account({ mnemonics: req.user.mnemonics })
+			.then(async account => {
+				var api_server = 'https://api2.aleph.im'
+				var network_id = 261
+				var channel = 'CHAT2'
+
+				let result = await aleph.posts.get_posts('chat.channels', {
+					hashes: [channel_hash],
+				})
+				let channel_record = result.posts[0]
+
+				let data = channel_record.content
+				data.approved_addresses.push(user_address)
+
+				let response = await aleph.posts.submit(
+					account.address,
+					'amend',
+					data,
+					{
+						api_server: api_server,
+						account: account,
+						channel: channel,
+						ref: channel_hash,
+					}
+				)
+
+				result = await aleph.posts.get_posts('chat.channels', {
+					hashes: [channel_hash],
+				})
+				channel_record = result.posts[0]
+			})
+	}
+)
+
+app.get(
+	'/rooms/:room/members',
+	connectEnsureLogin.ensureLoggedIn(),
+	async (req, res) => {
+		var room = req.params.room
+		var api_server = 'https://api2.aleph.im'
+		var network_id = 261
+
+		let memberships = await aleph.posts.get_posts('chat.channel_memberships', {
+			refs: [room],
+			api_server: api_server,
+		})
+
+		res.render('/members/index', {
+			user: req.user,
+			memberships: memberships.posts,
+			room: room,
+		})
+	}
+)
+
+app.get(
 	'/rooms/:room',
 	connectEnsureLogin.ensureLoggedIn(),
 	async (req, res) => {

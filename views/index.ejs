@@ -42,8 +42,8 @@
 					<hr />
 					<% channels.forEach((channel) => { %>
 						<% var parsed_item = JSON.parse(channel.item_content)%>
-					<a href="/rooms/<%= channel.item_hash %>" class="room-link">
-						<div class="card no-outline mb-2 room-card <%= room == channel.item_hash ? 'active' : ''%>">
+					<a href="/rooms/<%= channel.hash %>" class="room-link">
+						<div class="card no-outline mb-2 room-card <%= room == channel.hash ? 'active' : ''%>">
 							<div class="card-body">
 								<span class="name"><%= parsed_item.content.body %></span><br />
 								<span class="member-count">

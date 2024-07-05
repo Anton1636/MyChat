@@ -28,7 +28,8 @@
 	<body>
 		<div id="current-user" data-address="<%= user.address %>"></div>
 		<div id="current-room" data-room="<%= room %>"></div>
-		<div id="approved_addresses" data-approved_addresses="<%= channel_details.approved_addresses %>"></div>
+		<div id="approved_addresses" data-approved-addresses="<%= channel_details.approved_addresses %>"></div>
+		<div id="channet_type" data-type="<%= channel_details.type %>"></div>
 
 			<div class="container-fluid">
 			<div class="row">
@@ -36,15 +37,15 @@
 					<div class="card no-outline">
 						<div class="card-body">
 							<small>Logged in as</small><br />
-							<b>Username<br /></b>
+							<b><%= user.username %><br /></b>
 						</div>
 					</div>
 					<hr />
 					<hr />
 					<% channels.forEach((channel) => { %>
 						<% var parsed_item = JSON.parse(channel.item_content)%>
-					<a href="/rooms/<%= channel.item_hash %>" class="room-link">
-						<div class="card no-outline mb-2 room-card <%= room == channel.item_hash ? 'active' : ''%>">
+					<a href="/rooms/<%= channel.hash %>" class="room-link">
+						<div class="card no-outline mb-2 room-card <%= room == channel.hash ? 'active' : ''%>">
 							<div class="card-body">
 								<span class="name"><%= parsed_item.content.body %></span><br />
 								<span class="member-count">
@@ -115,7 +116,7 @@
 			$(document).ready(() => {
 
 				function appendMessage(message){
-					if(isNotOnPage(message) && isForChannel(message) && isChatMessage(message)){
+					if(isNotOnPage(message) && isForChannel(message) && isChatMessage(message)&& isApproved(message)){
 					var user_address = $('#current_user').data('address');
 					var template=
 					'<div class="message mb-2 '+ (user.address == message.content.address ? "me" :  "") + '"> \
@@ -138,6 +139,10 @@
 
 				function isChatMessage(message){
 					return message.content.content.body != undefined
+				}
+
+				function isApproved(message){
+					return ($('#approved-addresses').data('approved-addresses') == message.content.address || $('#channel-type').data('type') == 'public')
 				}
 
 				const socket = new WebSocket(
